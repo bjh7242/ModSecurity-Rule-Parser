@@ -5,7 +5,7 @@
     python script!"""
 
 def main():
-    print("HI")
+    print("HI1")
 
 if __name__ == "__main__":
     main()
