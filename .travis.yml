@@ -7,4 +7,7 @@ services:
 before_install:
       - docker --version  # document the version travis is using
       - docker build -t parser .
-      - docker run -d --rm -ti parser 
+      - docker run -d --rm -ti parser
+script:
+    - echo "end of run"
+
