@@ -1,0 +1,12 @@
+sudo: required
+
+language: python
+
+services:
+      - docker
+before_install:
+      - docker --version  # document the version travis is using
+      - docker build -t parser .
+      - docker run -d --rm -ti parser /bin/sh
+script:
+    - echo "test"
