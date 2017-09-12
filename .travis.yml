@@ -9,4 +9,4 @@ before_install:
       - docker build -t parser .
       - docker run -d --rm -ti parser /bin/sh
 script:
-    - echo "test"
+    - python3 /opt/start.py
