@@ -9,19 +9,36 @@ def main():
       'SECRULE',
       'SPACE',
       'VARIABLE',
+      'OPERATOR',
+      'BACKSLASH',
     )
 
     # Regular expression rules for simple tokens
     t_SECRULE    = r'SecRule'
+    t_BACKSLASH  = r'\\'
 
     def t_SPACE(t):
         r'(\sTX:)'
         #t.value = int(t.value)
         return t
 
-    def t_VARIABLE(t):
-        r'\".*?\"'
+    def t_OPERATOR(t):
+        r'\"@.*?\"'
         #t.value = int(t.value)
+        return t
+
+    def t_VARIABLE(t):
+        #r'\".*?\"'
+        r'SecRule\s(.*?)\s'
+        #t.value = int(t.value)
+        for i in t.lexer.lexmatch.groups():
+            if i is not None and 'SecRule' not in i:
+                t.value = i
+                return t
+            else:
+                t.value = None        # if unable to parse a variable, set it to None
+        #t.value = t.lexer.lexmatch.groups()
+        #import pdb; pdb.set_trace()
         return t
 
     # Define a rule so we can track line numbers
