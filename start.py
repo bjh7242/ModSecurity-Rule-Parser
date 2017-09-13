@@ -10,6 +10,7 @@ def main():
       'SPACE',
       'VARIABLE',
       'OPERATOR',
+      'ACTION',
       'BACKSLASH',
     )
 
@@ -19,26 +20,37 @@ def main():
 
     def t_SPACE(t):
         r'(\sTX:)'
-        #t.value = int(t.value)
+        #r'\s'
         return t
 
     def t_OPERATOR(t):
         r'\"@.*?\"'
-        #t.value = int(t.value)
         return t
 
     def t_VARIABLE(t):
-        #r'\".*?\"'
         r'SecRule\s(.*?)\s'
-        #t.value = int(t.value)
+        # pull out all groups that match the regex, loop through them and store
+        # the group that does not contain SecRule and is not None
         for i in t.lexer.lexmatch.groups():
             if i is not None and 'SecRule' not in i:
                 t.value = i
                 return t
             else:
-                t.value = None        # if unable to parse a variable, set it to None
-        #t.value = t.lexer.lexmatch.groups()
-        #import pdb; pdb.set_trace()
+                # if unable to parse a variable, set it to None
+                t.value = None
+        return t
+
+    def t_ACTION(t):
+        r'\"(.*?)\"'
+        # pull out all groups that match the regex, loop through them and store
+        # the group that does not contain SecRule and is not None
+        for i in t.lexer.lexmatch.groups():
+            if i is not None and 'SecRule' not in i:
+                t.value = i
+                return t
+            else:
+                # if unable to parse a variable, set it to None
+                t.value = None
         return t
 
     # Define a rule so we can track line numbers
