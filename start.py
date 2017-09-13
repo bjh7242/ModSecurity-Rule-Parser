@@ -59,7 +59,7 @@ def main():
         t.lexer.lineno += len(t.value)
 
     # A string containing ignored characters (spaces and tabs)
-    t_ignore  = '\t'
+    t_ignore  = '\t '
 
     # Error handling rule
     def t_error(t):
@@ -72,6 +72,14 @@ def main():
     # Test it out
     data = '''
     SecRule TX:PARANOIA_LEVEL "@lt 1" "phase:1,id:920011,nolog,pass,skipAfter:END-REQUEST-920-PROTOCOL-ENFORCEMENT"
+    SecRule TX:OUTBOUND_ANOMALY_SCORE "@ge %{tx.outbound_anomaly_score_threshold}" \
+	"phase:logging,\
+	id:980140,\
+	t:none,\
+	log,noauditlog,\
+	pass,\
+        tag:'event-correlation',\
+	msg:'Outbound Anomaly Score Exceeded (score %{TX.OUTBOUND_ANOMALY_SCORE}): %{tx.msg}'"
     '''
 
     # Give the lexer some input
