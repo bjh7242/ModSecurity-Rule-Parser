@@ -18,5 +18,4 @@ before_install:
       - docker build -t parser .
       - docker run -d --rm -ti parser
 script:
-      - find / -name start.py
       - python start.py
