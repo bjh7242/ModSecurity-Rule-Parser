@@ -9,4 +9,4 @@ COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 COPY . /opt/
 
-CMD ["python3", "/opt/start.py"]
+CMD ["python3", "/opt/start.py --file test-rules"]

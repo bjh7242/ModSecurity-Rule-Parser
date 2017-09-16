@@ -143,26 +143,27 @@ if __name__ == "__main__":
 
     with open(args.rulefile, 'r') as f:
         #import pdb; pdb.set_trace()
+        # for every line in the file, check to see if it is blank or
+        # check if it does not statt with SecRule
         for line in f:
             first_char_index = len(line) - len(line.lstrip())
-            # if the line is empty or starts with a #
-            print(data, end='')
-            #print(len(line), end='')
-            #if len(line) == 1:
-            #    print('empty line', end='')
-            #    next
+            # if the line is empty or starts with a #, don't parse it
+            if len(line) == 1:
+                next
             # if the line has whitespace chars but is empty (ex. \t\t\n)
-            if len(line.lstrip()) == 0:
+            elif len(line.lstrip()) == 0:
                 next
             # if the line starts with a comment, skip
             elif line[first_char_index] == '#':
                 #print('comment line', end='')
                 next
+            # if the line does not match any of the previous criteria, it is a
+            # valid rule line
             else:
                 data += line
             #print line
         #data = f.read()
-
+    print(data, end='')
     # data is a string of one or more rules
     #p = Parser(data)
     #p.parse()
