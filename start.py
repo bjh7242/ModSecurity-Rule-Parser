@@ -42,7 +42,7 @@ class Parser():
         self.rule_string = rule_string
 
     def parse(self):
-        # List of token names.   This is always required
+        # List of token names.
         tokens = (
           'SECRULE',
           'SPACE',
@@ -159,11 +159,15 @@ if __name__ == "__main__":
                 next
             # if the line does not match any of the previous criteria, it is a
             # valid rule line
+            elif line.rstrip()[-1:] == '\\':
+                #print("ENDS WITH BACKSLASH")
+                data += line.lstrip().rstrip()[:-1]
             else:
+                #print(line.lstrip().rstrip()[:-1])
                 data += line
             #print line
         #data = f.read()
-    print(data, end='')
+    #print(data, end='')
     # data is a string of one or more rules
-    #p = Parser(data)
-    #p.parse()
+    p = Parser(data)
+    p.parse()
