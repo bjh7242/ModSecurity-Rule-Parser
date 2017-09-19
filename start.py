@@ -44,6 +44,7 @@ class Parser():
     def parse(self):
         # List of token names.
         tokens = (
+          'SECMARKER',
           'SECRULE',
           'SPACE',
           'VARIABLE',
@@ -55,6 +56,10 @@ class Parser():
         # Regular expression rules for simple tokens
         t_SECRULE    = r'SecRule'
         t_BACKSLASH  = r'\\'
+
+        def t_SECMARKER(t):
+            r'\s*?SecMarker.*'
+            return t
 
         def t_SPACE(t):
             r'(\sTX:)'
