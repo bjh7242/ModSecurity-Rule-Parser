@@ -9,20 +9,11 @@ class SecRule():
     class SecRule():
         """ A class for a secrule. It contains objects for the Variable, Operator,
         and Action parts of the rules """
-        def __init__(self, rule):
+        def __init__(self, rule=None, variable=None, operator=None, action=None):
             self.rule = rule
-            self.variable = ""
-            self.operator = ""
-            self.action = ""
-
-        def get_var(self):
-            Variable(self.variable)
-
-        def get_operator(self):
-            Operator(self.operator)
-
-        def get_action(self):
-            Action(self.action)
+            self.variable = variable
+            self.operator = operator
+            self.action = action
 
 class Variable():
     def __init__(self, variable):
@@ -34,6 +25,8 @@ class Operator():
         pass
 
 class Action():
+    # if the action is a 'chain' then the subsequent SecRule is also part of the
+    # one being evaluated
     def __init__(self, action):
         pass
 
@@ -112,28 +105,37 @@ class Parser():
         # Build the lexer
         lexer = lex.lex()
 
-        # Test it out
-        """data = '''
-        SecRule TX:PARANOIA_LEVEL "@lt 1" "phase:1,id:920011,nolog,pass,skipAfter:END-REQUEST-920-PROTOCOL-ENFORCEMENT"
-        SecRule TX:OUTBOUND_ANOMALY_SCORE "@ge %{tx.outbound_anomaly_score_threshold}" \
-    	"phase:logging,\
-    	id:980140,\
-    	t:none,\
-    	log,noauditlog,\
-    	pass,\
-            tag:'event-correlation',\
-    	msg:'Outbound Anomaly Score Exceeded (score %{TX.OUTBOUND_ANOMALY_SCORE}): %{tx.msg}'"
-        '''"""
-
         # Give the lexer some input
         lexer.input(data)
 
         # Tokenize
+        #import pdb; pdb.set_trace()
+        secrules = []
+        newrule = SecRule()
+
         while True:
             tok = lexer.token()
             if not tok:
                 break      # No more input
-            print(tok)
+            elif tok.type == 'VARIABLE':
+                newrule.variable = tok
+
+            elif tok.type == 'OPERATOR':
+                newrule.operator = tok
+
+            elif tok.type == 'ACTION':
+                newrule.action = tok
+
+            # add full rule to the secrules object list
+            if hasattr(newrule, 'variable') and newrule.variable is not None \
+             and hasattr(newrule, 'operator') and newrule.operator is not None \
+             and hasattr(newrule, 'action') and newrule.action is not None:
+                secrules.append(newrule)
+                newrule = SecRule()
+                #print('operator')
+            #print(tok)
+        for rule in secrules:
+            print(rule.__dict__)
 
 
 
