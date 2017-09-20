@@ -7,15 +7,14 @@ import ply.lex as lex
 
 
 class SecRule():
-    class SecRule():
-        """ A class for a secrule. It contains objects for the Variable,
-        Operator, and Action parts of the rules """
-        def __init__(self, rule=None, variable=None, operator=None,
-                     action=None):
-            self.rule = rule
-            self.variable = variable
-            self.operator = operator
-            self.action = action
+    """ A class for a secrule. It contains objects for the Variable,
+    Operator, and Action parts of the rules """
+    def __init__(self, rule=None, variable=None, operator=None,
+                 action=None):
+        self.rule = rule
+        self.variable = variable
+        self.operator = operator
+        self.action = action
 
 
 class Variable():
@@ -41,7 +40,6 @@ class Parser():
         self.rule_string = rule_string
 
     def parse(self):
-        secrules = []
         newrule = SecRule()
 
         # List of token names.
@@ -89,7 +87,7 @@ class Parser():
                     t.value = i
                     return t
                 else:
-                    # if unable to parse a variable, set it to None
+                    # if unable to parse an action, set it to None
                     t.value = None
             return t
 
@@ -110,10 +108,9 @@ class Parser():
         lexer = lex.lex()
 
         # Give the lexer some input
-        lexer.input(data)
+        lexer.input(self.rule_string)
 
         # Tokenize
-        # import pdb; pdb.set_trace()
         while True:
             tok = lexer.token()
             if not tok:
@@ -128,17 +125,15 @@ class Parser():
             elif tok.type == 'ACTION':
                 newrule.action = tok
 
-            # add full rule to the secrules object list
+            # return the full SecRule object
             if hasattr(newrule, 'variable') and \
                newrule.variable is not None and \
                hasattr(newrule, 'operator') and \
                newrule.operator is not None and \
                hasattr(newrule, 'action') and newrule.action is not None:
-                secrules.append(newrule)
-                newrule = SecRule()
-
-        for rule in secrules:
-            print(rule.__dict__)
+                # add the rule string to the SecRule object
+                newrule.rule = self.rule_string
+                return newrule
 
 
 if __name__ == "__main__":
@@ -149,6 +144,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     data = ""       # variable to hold string of the contents of the rule file
+    plaintextrules = []      # list of lines from a file containing rules
+    secrules = []   # list of SecRule objects
 
     with open(args.rulefile, 'r') as f:
         # for every line in the file, check to see if it is blank or
@@ -158,19 +155,36 @@ if __name__ == "__main__":
             # if the line is empty or starts with a #, don't parse it
             if len(line) == 1:
                 next
+
             # if the line has whitespace chars but is empty (ex. \t\t\n)
             elif len(line.lstrip()) == 0:
                 next
+
             # if the line starts with a comment, skip
             elif line[first_char_index] == '#':
                 next
+
             # if the line does not match any of the previous criteria, it is a
             # valid rule line
             elif line.rstrip()[-1:] == '\\':
                 data += line.lstrip().rstrip()[:-1]
+
+            # else, add the line to the rest of the data
             else:
                 data += line
+                plaintextrules.append(data.lstrip().rstrip())
+                data = ""
 
-    # data is a string of one or more rules
-    p = Parser(data)
-    p.parse()
+    # for all the rules in the plaintext rules list, create a SecRule object
+    # and add it to a SecRules list
+    # import pdb; pdb.set_trace()
+    for rule in plaintextrules:
+        secrule = SecRule()
+        p = Parser(rule)
+        secrule = p.parse()     # parse the rule string and return SecRule obj
+        # append the SecRule object to the object list
+        if secrule is not None:
+            secrules.append(secrule)
+
+    for secrule in secrules:
+        print(str(secrule.__dict__)+ '\n--')
