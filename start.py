@@ -4,6 +4,7 @@ import argparse
 import re
 import ply.yacc as yacc
 import ply.lex as lex
+from itertools import cycle
 
 
 class SecRule():
@@ -145,13 +146,7 @@ class Parser():
                 return newrule
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Parse ModSecurity Rules')
-    parser.add_argument('--file', dest='rulefile', required=True,
-                        help='the file containing a list of ModSecurity rules \
-                        to parse')
-
-    args = parser.parse_args()
+def parse_file(rulefile):
     data = ""       # variable to hold string of the contents of the rule file
     plaintextrules = []      # list of lines from a file containing rules
     secrules = []   # list of SecRule objects
@@ -194,9 +189,26 @@ if __name__ == "__main__":
         if secrule is not None:
             secrules.append(secrule)
 
-    for secrule in secrules:
-        #print(str(secrule.__dict__)+ '\n--')
+    #import pdb; pdb.set_trace()
+    for index, secrule in enumerate(secrules):
         if 'chain' in secrule.action.action:
-            print('parse next rule in chain')
-        #print(str(secrule.action.action) + '\n--')
-        pass
+            # add the next rule in the secrules list to secrule.chain_rule
+            # then remove the next element in the list
+            secrule.chain_rule = secrules[index+1]
+            del secrules[index+1]
+            #print('parse next rule in chain')
+            #print(str(secrule.action.action) + '\n--')
+            #print(str(index) + ': ' + str(secrule.__dict__)+ '\n--')
+
+    for index, rule in enumerate(secrules):
+        print(str(index) + ': ' + str(rule.__dict__))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Parse ModSecurity Rules')
+    parser.add_argument('--file', dest='rulefile', required=True,
+                        help='the file containing a list of ModSecurity rules \
+                        to parse')
+
+    args = parser.parse_args()
+    parse_file(args.rulefile)
