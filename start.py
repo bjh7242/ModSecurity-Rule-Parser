@@ -53,6 +53,7 @@ class Parser():
         # List of token names.
         tokens = (
           'SECMARKER',
+          'SECCOMPONENTSIGNATURE',
           'SECRULE',
           'SPACE',
           'VARIABLE',
@@ -67,6 +68,10 @@ class Parser():
 
         def t_SECMARKER(t):
             r'\s*?SecMarker.*'
+            return t
+
+        def t_SECCOMPONENTSIGNATURE(t):
+            r'\s*?SecComponentSignature.*'
             return t
 
         def t_OPERATOR(t):
@@ -126,6 +131,7 @@ class Parser():
 
             elif tok.type == 'VARIABLE':
                 newrule.variable = tok
+                print(tok)
 
             elif tok.type == 'OPERATOR':
                 newrule.operator = tok
@@ -201,7 +207,8 @@ def parse_file(rulefile):
             #print(str(index) + ': ' + str(secrule.__dict__)+ '\n--')
 
     for index, rule in enumerate(secrules):
-        print(str(index) + ': ' + str(rule.__dict__))
+        #print(str(index) + ': ' + str(rule.__dict__))
+        pass
 
 
 if __name__ == "__main__":
