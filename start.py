@@ -10,11 +10,13 @@ class SecRule():
     """ A class for a secrule. It contains objects for the Variable,
     Operator, and Action parts of the rules """
     def __init__(self, rule=None, variable=None, operator=None,
-                 action=None):
+                 action=None, chain_rule=None):
         self.rule = rule
         self.variable = variable
         self.operator = operator
         self.action = action
+        # if the rule is a chain rule, store the next rule here
+        self.chain_rule = chain_rule
 
 
 class Variable():
@@ -31,8 +33,13 @@ class Operator():
 class Action():
     # if the action is a 'chain' then the subsequent SecRule is also part of
     # the one being evaluated
-    def __init__(self, action):
+    def __init__(self, action=None):
+        self.action = action
         pass
+
+    def action_parse(self):
+        # parse all actions into a list
+        self.action = self.action[1:-1].split(',')
 
 
 class Parser():
@@ -123,7 +130,9 @@ class Parser():
                 newrule.operator = tok
 
             elif tok.type == 'ACTION':
-                newrule.action = tok
+                rule_action = Action(tok.value)
+                rule_action.action_parse()
+                newrule.action = rule_action
 
             # return the full SecRule object
             if hasattr(newrule, 'variable') and \
@@ -171,13 +180,12 @@ if __name__ == "__main__":
 
             # else, add the line to the rest of the data
             else:
-                data += line
+                data += line.lstrip().rstrip()
                 plaintextrules.append(data.lstrip().rstrip())
                 data = ""
 
     # for all the rules in the plaintext rules list, create a SecRule object
     # and add it to a SecRules list
-    # import pdb; pdb.set_trace()
     for rule in plaintextrules:
         secrule = SecRule()
         p = Parser(rule)
@@ -187,4 +195,8 @@ if __name__ == "__main__":
             secrules.append(secrule)
 
     for secrule in secrules:
-        print(str(secrule.__dict__)+ '\n--')
+        #print(str(secrule.__dict__)+ '\n--')
+        if 'chain' in secrule.action.action:
+            print('parse next rule in chain')
+        #print(str(secrule.action.action) + '\n--')
+        pass
