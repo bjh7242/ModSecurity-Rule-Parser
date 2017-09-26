@@ -35,12 +35,7 @@ class Action():
     # if the action is a 'chain' then the subsequent SecRule is also part of
     # the one being evaluated
     def __init__(self, action=None):
-        self.action = action
-        pass
-
-    def action_parse(self):
-        # parse all actions into a list
-        self.action = self.action[1:-1].split(',')
+        self.action = action[1:-1].split(',')
 
 
 class Parser():
@@ -55,6 +50,7 @@ class Parser():
           'SECMARKER',
           'SECCOMPONENTSIGNATURE',
           'SECRULE',
+          'SECACTION',
           'SPACE',
           'VARIABLE',
           'OPERATOR',
@@ -65,6 +61,7 @@ class Parser():
         # Regular expression rules for simple tokens
         t_SECRULE = r'SecRule'
         t_BACKSLASH = r'\\'
+        t_SECACTION = r'SecAction'
 
         def t_SECMARKER(t):
             r'\s*?SecMarker.*'
@@ -92,7 +89,7 @@ class Parser():
             return t
 
         def t_ACTION(t):
-            r'\"(.*?)\"'
+            r'\"?(.+)\"?'
             # pull out all groups that match the regex, loop through them and
             # store the group that does not contain SecRule and is not None
             for i in t.lexer.lexmatch.groups():
@@ -131,15 +128,14 @@ class Parser():
 
             elif tok.type == 'VARIABLE':
                 newrule.variable = tok
-                print(tok)
 
             elif tok.type == 'OPERATOR':
                 newrule.operator = tok
 
             elif tok.type == 'ACTION':
                 rule_action = Action(tok.value)
-                rule_action.action_parse()
                 newrule.action = rule_action
+                print(tok)
 
             # return the full SecRule object
             if hasattr(newrule, 'variable') and \
@@ -154,13 +150,18 @@ class Parser():
 
 def parse_file(rulefile):
     data = ""       # variable to hold string of the contents of the rule file
-    plaintextrules = []      # list of lines from a file containing rules
+    seccomponentsignature = ""  # signature for the version of the rules
     secrules = []   # list of SecRule objects
+    plaintextrules = []     # list of lines from a file containing rules
+    plaintextactions = []   # list of SecAction declarations
+    plaintextmarkers = []   # list of SecMarker declarations
 
     with open(args.rulefile, 'r') as f:
         # for every line in the file, check to see if it is blank or
-        # check if it does not statt with SecRule
-        for line in f:
+        # check if it does not start with SecRule
+        # Declaration types supported:
+        #       SecRule, SecAction, SecMarker, SecComponentSignature
+        for index, line in enumerate(f):
             first_char_index = len(line) - len(line.lstrip())
             # if the line is empty or starts with a #, don't parse it
             if len(line) == 1:
@@ -174,6 +175,10 @@ def parse_file(rulefile):
             elif line[first_char_index] == '#':
                 next
 
+            # if the line is a SecAction or SecMarker, add it to the string
+            elif 'SecAction' in line or 'SecMarker' in line:
+                data += line.lstrip().rstrip()
+
             # if the line does not match any of the previous criteria, it is a
             # valid rule line
             elif line.rstrip()[-1:] == '\\':
@@ -182,7 +187,17 @@ def parse_file(rulefile):
             # else, add the line to the rest of the data
             else:
                 data += line.lstrip().rstrip()
-                plaintextrules.append(data.lstrip().rstrip())
+                if 'SecAction' in data:
+                    plaintextactions.append(data.lstrip().rstrip())
+                elif 'SecRule' in data:
+                    plaintextrules.append(data.lstrip().rstrip())
+                elif 'SecMarker' in data:
+                    plaintextmarkers.append(data.lstrip().rstrip())
+                elif 'SecComponentSignature' in data:
+                    seccomponentsignature = data
+                else:
+                    print('Parsing Error, message: \n---\n' + data + '\n---')
+                    #print("There was an error parsing something somewhere...")
                 data = ""
 
     # for all the rules in the plaintext rules list, create a SecRule object
@@ -195,16 +210,12 @@ def parse_file(rulefile):
         if secrule is not None:
             secrules.append(secrule)
 
-    #import pdb; pdb.set_trace()
     for index, secrule in enumerate(secrules):
         if 'chain' in secrule.action.action:
             # add the next rule in the secrules list to secrule.chain_rule
             # then remove the next element in the list
             secrule.chain_rule = secrules[index+1]
             del secrules[index+1]
-            #print('parse next rule in chain')
-            #print(str(secrule.action.action) + '\n--')
-            #print(str(index) + ': ' + str(secrule.__dict__)+ '\n--')
 
     for index, rule in enumerate(secrules):
         #print(str(index) + ': ' + str(rule.__dict__))
@@ -218,4 +229,5 @@ if __name__ == "__main__":
                         to parse')
 
     args = parser.parse_args()
+    #import pdb; pdb.set_trace()
     parse_file(args.rulefile)
