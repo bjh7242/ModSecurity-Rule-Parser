@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import argparse
+import json
 import re
 import ply.yacc as yacc
 import ply.lex as lex
@@ -19,6 +20,21 @@ class SecRule():
         # if the rule is a chain rule, store the next rule here
         self.chain_rule = chain_rule
 
+    def jsonify_rule(self):
+        #import pdb; pdb.set_trace()
+        json_rule = {}
+        json_rule['rule'] = self.rule
+        json_rule['variable'] = self.variable.value
+        json_rule['operator'] = self.operator.value
+        json_rule['action'] = self.action.action
+        if self.chain_rule is not None:
+            json_rule['chain_rule'] = self.chain_rule.jsonify_rule()
+        return json_rule
+
+    def print_json_rule(self):
+        print(json.dumps(self.jsonify_rule(), sort_keys=True, indent=4,
+                         separators=(',', ': ')))
+
 
 class Variable():
     def __init__(self, variable):
@@ -35,7 +51,14 @@ class Action():
     # if the action is a 'chain' then the subsequent SecRule is also part of
     # the one being evaluated
     def __init__(self, action=None):
-        self.action = action[1:-1].split(',')
+        # if the rule does not start with a single or double quote, then add the
+        # whole line, else grab the line between the quotes
+        if action[0] == '"' or action[0] == '\'':
+            # grab line between quotes
+            self.action = action[1:-1].split(',')
+        else:
+            # grab whole line
+            self.action = action.split(',')
 
 
 class Parser():
@@ -135,7 +158,7 @@ class Parser():
             elif tok.type == 'ACTION':
                 rule_action = Action(tok.value)
                 newrule.action = rule_action
-                print(tok)
+                #print(tok)
 
             # return the full SecRule object
             if hasattr(newrule, 'variable') and \
@@ -146,6 +169,19 @@ class Parser():
                 # add the rule string to the SecRule object
                 newrule.rule = self.rule_string
                 return newrule
+
+
+def chain_rules(secrules):
+    ''' Recurse through a list of secrules look to chain rules together
+    '''
+    for index, secrule in enumerate(secrules):
+        if 'chain' in secrule.action.action and secrule.chain_rule is None:
+            # add the next rule in the secrules list to secrule.chain_rule
+            # then remove the next element in the list
+            secrule.chain_rule = secrules[index+1]
+            del secrules[index+1]
+            chain_rules(secrules)
+    return secrules
 
 
 def parse_file(rulefile):
@@ -197,7 +233,7 @@ def parse_file(rulefile):
                     seccomponentsignature = data
                 else:
                     print('Parsing Error, message: \n---\n' + data + '\n---')
-                    #print("There was an error parsing something somewhere...")
+                    # exit status 1 here
                 data = ""
 
     # for all the rules in the plaintext rules list, create a SecRule object
@@ -210,16 +246,14 @@ def parse_file(rulefile):
         if secrule is not None:
             secrules.append(secrule)
 
-    for index, secrule in enumerate(secrules):
-        if 'chain' in secrule.action.action:
-            # add the next rule in the secrules list to secrule.chain_rule
-            # then remove the next element in the list
-            secrule.chain_rule = secrules[index+1]
-            del secrules[index+1]
+    # parse the list of rules, if they have a chain, add it to the chain rule
+    # of the previous rule
+    chained_rules = chain_rules(secrules)
 
-    for index, rule in enumerate(secrules):
-        #print(str(index) + ': ' + str(rule.__dict__))
-        pass
+    for index, secrule in enumerate(chained_rules):
+        # print the json version of the rule
+        #print('lol')
+        secrule.print_json_rule()
 
 
 if __name__ == "__main__":
