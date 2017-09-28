@@ -111,7 +111,15 @@ class Parser():
             return t
 
         def t_OPERATOR(t):
-            r'\"@?.*?\"\s+'
+            # figure out how to get the cap. group to not grab the last space
+            r'(\"@?.*?\")\s+?'
+            for i in t.lexer.lexmatch.groups():
+                if i is not None and 'SecRule' not in i:
+                    t.value = i.lstrip().rstrip()
+                    return t
+                else:
+                    # if unable to parse an operator, set it to None
+                    t.value = None
             return t
 
         def t_ACTION(t):
@@ -158,12 +166,12 @@ class Parser():
 
             elif tok.type == 'OPERATOR':
                 newrule.operator = tok
-                print(tok)
+                #print(tok)
 
             elif tok.type == 'ACTION':
                 rule_action = Action(tok.value)
                 newrule.action = rule_action
-                print(tok)
+                #print(tok)
 
             # return the full SecRule object
             if hasattr(newrule, 'variable') and \
@@ -270,8 +278,7 @@ def parse_file(rulefile):
     for index, secrule in enumerate(secrules):
         # print the json version of the rule
         #print('lol')
-        #secrule.print_json_rule()
-        pass
+        secrule.print_json_rule()
 
 
 if __name__ == "__main__":
