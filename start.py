@@ -42,7 +42,10 @@ class Variable():
 
 
 class Operator():
-    """ Operators begin with the @ character """
+    ''' Operators begin with the @ character
+    Rules that do not have an operator default to an rx operator
+    https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual#rx
+    '''
     def __init__(self, operator):
         pass
 
@@ -51,8 +54,8 @@ class Action():
     # if the action is a 'chain' then the subsequent SecRule is also part of
     # the one being evaluated
     def __init__(self, action=None):
-        # if the rule does not start with a single or double quote, then add the
-        # whole line, else grab the line between the quotes
+        # if the rule does not start with a single or double quote, then add
+        # the whole line, else grab the line between the quotes
         if action[0] == '"' or action[0] == '\'':
             # grab line between quotes
             self.action = action[1:-1].split(',')
@@ -94,10 +97,6 @@ class Parser():
             r'\s*?SecComponentSignature.*'
             return t
 
-        def t_OPERATOR(t):
-            r'\"@.*?\"'
-            return t
-
         def t_VARIABLE(t):
             r'SecRule\s(.*?)\s'
             # pull out all groups that match the regex, loop through them and
@@ -109,6 +108,10 @@ class Parser():
                 else:
                     # if unable to parse a variable, set it to None
                     t.value = None
+            return t
+
+        def t_OPERATOR(t):
+            r'\"@?.*?\"\s+'
             return t
 
         def t_ACTION(t):
@@ -151,14 +154,16 @@ class Parser():
 
             elif tok.type == 'VARIABLE':
                 newrule.variable = tok
+                #print(tok)
 
             elif tok.type == 'OPERATOR':
                 newrule.operator = tok
+                print(tok)
 
             elif tok.type == 'ACTION':
                 rule_action = Action(tok.value)
                 newrule.action = rule_action
-                #print(tok)
+                print(tok)
 
             # return the full SecRule object
             if hasattr(newrule, 'variable') and \
@@ -175,12 +180,24 @@ def chain_rules(secrules):
     ''' Recurse through a list of secrules look to chain rules together
     '''
     for index, secrule in enumerate(secrules):
-        if 'chain' in secrule.action.action and secrule.chain_rule is None:
-            # add the next rule in the secrules list to secrule.chain_rule
-            # then remove the next element in the list
-            secrule.chain_rule = secrules[index+1]
-            del secrules[index+1]
-            chain_rules(secrules)
+        if 'chain' in secrules[index].action.action:
+            print(secrules)
+#            print(len(secrules))
+#            print('we got a chain')
+#            print(index)
+#        while index < len(secrules) and \
+#              'chain' in secrules[index].action.action and \
+#              'chain' in secrules[index+1].action.action:
+#              secrules[index+1].chain_rule = secrules[index+2]
+#              del secrules[index+1]
+#        if 'chain' in secrule.action.action and secrule.chain_rule is None:
+#            # add the next rule in the secrules list to secrule.chain_rule
+#            # then remove the next element in the list
+#            secrule.chain_rule = secrules[index+1]
+#            del secrules[index+1]
+#            chain_rules(secrules)
+        else:
+            print('end of chain')
     return secrules
 
 
@@ -248,15 +265,17 @@ def parse_file(rulefile):
 
     # parse the list of rules, if they have a chain, add it to the chain rule
     # of the previous rule
-    chained_rules = chain_rules(secrules)
+    #chained_rules = chain_rules(secrules)
 
-    for index, secrule in enumerate(chained_rules):
+    for index, secrule in enumerate(secrules):
         # print the json version of the rule
         #print('lol')
-        secrule.print_json_rule()
+        #secrule.print_json_rule()
+        pass
 
 
 if __name__ == "__main__":
+    #import pdb; pdb.set_trace()
     parser = argparse.ArgumentParser(description='Parse ModSecurity Rules')
     parser.add_argument('--file', dest='rulefile', required=True,
                         help='the file containing a list of ModSecurity rules \
