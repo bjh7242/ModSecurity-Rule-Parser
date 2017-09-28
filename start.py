@@ -187,9 +187,37 @@ class Parser():
 def chain_rules(secrules):
     ''' Recurse through a list of secrules look to chain rules together
     '''
-    for index, secrule in enumerate(secrules):
-        if 'chain' in secrules[index].action.action:
-            print(secrules)
+    i = 0               # index
+    beg_chain = 0       # beginning of the chain rules
+    end_chain = 0
+    while i < len(secrules):
+        print('while: ' + str(i))
+        if 'chain' in secrules[i].action.action:
+            beg_chain = i   # set start of chain to current loop
+            # loop through all the rules to find the end of the chain
+            for index in range(beg_chain, len(secrules)):
+                if 'chain' in secrules[index].action.action:
+                    # continue through loop
+                    print('chainloop')
+                    continue
+                else:
+                    # else, we are at the end of the chain
+                    end_chain = index
+
+            # start at end of chain and add to chain_rule attribute of element
+            # before it
+            for num in range(end_chain, beg_chain, -1):
+                secrules[num-1].chain_rule = secrules[num]
+                print('lol')
+                del secrules[num]
+
+#            secrules[index].chain_rule = secrules[index+1]
+#            del secrules[index+1]   # delete the end of the chain
+#            i += 1      # increment
+
+#    for index, secrule in enumerate(secrules):
+#        if 'chain' in secrules[index].action.action:
+#            print(secrules)
 #            print(len(secrules))
 #            print('we got a chain')
 #            print(index)
@@ -204,8 +232,8 @@ def chain_rules(secrules):
 #            secrule.chain_rule = secrules[index+1]
 #            del secrules[index+1]
 #            chain_rules(secrules)
-        else:
-            print('end of chain')
+        i += 1
+    print(secrules)
     return secrules
 
 
@@ -273,16 +301,16 @@ def parse_file(rulefile):
 
     # parse the list of rules, if they have a chain, add it to the chain rule
     # of the previous rule
-    #chained_rules = chain_rules(secrules)
+    chained_rules = chain_rules(secrules)
 
-    for index, secrule in enumerate(secrules):
+    for index, secrule in enumerate(chained_rules):
         # print the json version of the rule
         #print('lol')
         secrule.print_json_rule()
 
 
 if __name__ == "__main__":
-    #import pdb; pdb.set_trace()
+    import pdb; pdb.set_trace()
     parser = argparse.ArgumentParser(description='Parse ModSecurity Rules')
     parser.add_argument('--file', dest='rulefile', required=True,
                         help='the file containing a list of ModSecurity rules \
