@@ -9,10 +9,20 @@ from itertools import cycle
 
 
 class SecRule():
-    """ A class for a secrule. It contains objects for the Variable,
-    Operator, and Action parts of the rules """
+    """ This is a class to break up components of SecRule declarations
+    """
     def __init__(self, rule=None, variable=None, operator=None,
                  action=None, chain_rule=None):
+        """!@brief Creates a secrule object. It contains objects for the Variable,
+        Operator, and Action parts of the rules
+
+        @param rule A string containing the full SecRule
+        @param variable A LexToken object with a type = variable
+        @param operator A LexToken object with a type = operator
+        @param action An Action object associated with the rule
+        @param chain_rule A SecRule object that is the next rule in a chain
+        (if there is a chain action in this rule)
+        """
         self.rule = rule
         self.variable = variable
         self.operator = operator
@@ -21,7 +31,8 @@ class SecRule():
         self.chain_rule = chain_rule
 
     def jsonify_rule(self):
-        #import pdb; pdb.set_trace()
+        """!@brief Returns a dict of the attributes of the object
+        """
         json_rule = {}
         json_rule['rule'] = self.rule
         json_rule['variable'] = self.variable.value
@@ -32,28 +43,24 @@ class SecRule():
         return json_rule
 
     def print_json_rule(self):
+        """!@brief Prints the rule in a json format
+        """
         print(json.dumps(self.jsonify_rule(), sort_keys=True, indent=4,
                          separators=(',', ': ')))
 
 
-class Variable():
-    def __init__(self, variable):
-        pass
-
-
-class Operator():
-    ''' Operators begin with the @ character
-    Rules that do not have an operator default to an rx operator
-    https://github.com/SpiderLabs/ModSecurity/wiki/Reference-Manual#rx
-    '''
-    def __init__(self, operator):
-        pass
-
-
 class Action():
-    # if the action is a 'chain' then the subsequent SecRule is also part of
-    # the one being evaluated
+    """!@brief A class to represent the 'action' component of a SecRule
+    declaration
+    """
     def __init__(self, action=None):
+        """!@brief The constructor for Action objects
+
+        Rules that have a 'chain' action will have a chain_rule attribute in
+        the associated SecRule object
+
+        @param action A string containing the action component of a SecRule
+        """
         # if the rule does not start with a single or double quote, then add
         # the whole line, else grab the line between the quotes
         if action[0] == '"' or action[0] == '\'':
@@ -65,10 +72,19 @@ class Action():
 
 
 class Parser():
+    """!@brief A class to handle parsing ModSecurity rules
+    """
     def __init__(self, rule_string=""):
+        """!@brief A constructor for creating a Parser object
+
+        @param rule_string A string containing a rule to be parsed
+        """
         self.rule_string = rule_string
 
     def parse(self):
+        """!@brief Parses the rule_string in this object and returns an
+        associated SecRule object
+        """
         newrule = SecRule()
 
         # List of token names.
@@ -162,16 +178,13 @@ class Parser():
 
             elif tok.type == 'VARIABLE':
                 newrule.variable = tok
-                #print(tok)
 
             elif tok.type == 'OPERATOR':
                 newrule.operator = tok
-                #print(tok)
 
             elif tok.type == 'ACTION':
                 rule_action = Action(tok.value)
                 newrule.action = rule_action
-                #print(tok)
 
             # return the full SecRule object
             if hasattr(newrule, 'variable') and \
@@ -185,8 +198,9 @@ class Parser():
 
 
 def chain_rules(secrules):
-    ''' Recurse through a list of secrules look to chain rules together
-    '''
+    """!@brief Loop through a list of secrules in order to chain rules together
+    @param secrules A list of SecRule objects
+    """
     i = 0       # index
 
     while i < len(secrules):
@@ -216,6 +230,9 @@ def chain_rules(secrules):
 
 
 def parse_file(rulefile):
+    """!@brief Parse a given file containing ModSecurity rules
+    @param rulefile The name of a file containing the rules to parse
+    """
     data = ""       # variable to hold string of the contents of the rule file
     seccomponentsignature = ""  # signature for the version of the rules
     secrules = []   # list of SecRule objects
@@ -223,7 +240,7 @@ def parse_file(rulefile):
     plaintextactions = []   # list of SecAction declarations
     plaintextmarkers = []   # list of SecMarker declarations
 
-    with open(args.rulefile, 'r') as f:
+    with open(rulefile, 'r') as f:
         # for every line in the file, check to see if it is blank or
         # check if it does not start with SecRule
         # Declaration types supported:
@@ -283,12 +300,10 @@ def parse_file(rulefile):
 
     for index, secrule in enumerate(chained_rules):
         # print the json version of the rule
-        #print('lol')
         secrule.print_json_rule()
 
 
 if __name__ == "__main__":
-    #import pdb; pdb.set_trace()
     parser = argparse.ArgumentParser(description='Parse ModSecurity Rules')
     parser.add_argument('--file', dest='rulefile', required=True,
                         help='the file containing a list of ModSecurity rules \
