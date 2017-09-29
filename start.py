@@ -187,53 +187,31 @@ class Parser():
 def chain_rules(secrules):
     ''' Recurse through a list of secrules look to chain rules together
     '''
-    i = 0               # index
-    beg_chain = 0       # beginning of the chain rules
-    end_chain = 0
+    i = 0       # index
+
     while i < len(secrules):
-        print('while: ' + str(i))
-        if 'chain' in secrules[i].action.action:
-            beg_chain = i   # set start of chain to current loop
+        beg_chain = i       # index of the beginning of a chain rule
+        end_chain = None
+        if 'chain' in secrules[beg_chain].action.action:
             # loop through all the rules to find the end of the chain
             for index in range(beg_chain, len(secrules)):
-                if 'chain' in secrules[index].action.action:
-                    # continue through loop
-                    print('chainloop')
+                if 'chain' in secrules[index].action.action and \
+                   secrules[index].chain_rule is None:
+                    # continue through loop if the rule is part of the chain
                     continue
                 else:
                     # else, we are at the end of the chain
                     end_chain = index
+                    break
 
-            # start at end of chain and add to chain_rule attribute of element
-            # before it
-            for num in range(end_chain, beg_chain, -1):
-                secrules[num-1].chain_rule = secrules[num]
-                print('lol')
-                del secrules[num]
+            # start at end of chain and add to the chain_rule attribute of the
+            # element before it
+            if end_chain is not None and end_chain > beg_chain:
+                for num in range(end_chain, beg_chain, -1):
+                    secrules[num-1].chain_rule = secrules[num]
+                    del secrules[num]
 
-#            secrules[index].chain_rule = secrules[index+1]
-#            del secrules[index+1]   # delete the end of the chain
-#            i += 1      # increment
-
-#    for index, secrule in enumerate(secrules):
-#        if 'chain' in secrules[index].action.action:
-#            print(secrules)
-#            print(len(secrules))
-#            print('we got a chain')
-#            print(index)
-#        while index < len(secrules) and \
-#              'chain' in secrules[index].action.action and \
-#              'chain' in secrules[index+1].action.action:
-#              secrules[index+1].chain_rule = secrules[index+2]
-#              del secrules[index+1]
-#        if 'chain' in secrule.action.action and secrule.chain_rule is None:
-#            # add the next rule in the secrules list to secrule.chain_rule
-#            # then remove the next element in the list
-#            secrule.chain_rule = secrules[index+1]
-#            del secrules[index+1]
-#            chain_rules(secrules)
         i += 1
-    print(secrules)
     return secrules
 
 
@@ -310,12 +288,11 @@ def parse_file(rulefile):
 
 
 if __name__ == "__main__":
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     parser = argparse.ArgumentParser(description='Parse ModSecurity Rules')
     parser.add_argument('--file', dest='rulefile', required=True,
                         help='the file containing a list of ModSecurity rules \
                         to parse')
 
     args = parser.parse_args()
-    #import pdb; pdb.set_trace()
     parse_file(args.rulefile)
