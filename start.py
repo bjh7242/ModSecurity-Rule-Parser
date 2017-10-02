@@ -6,13 +6,14 @@ import re
 import ply.yacc as yacc
 import ply.lex as lex
 from itertools import cycle
+from termcolor import colored, cprint
 
 
 class SecRule():
     """ This is a class to break up components of SecRule declarations
     """
     def __init__(self, rule=None, variable=None, operator=None,
-                 action=None, chain_rule=None):
+                 action=None, chain_rule=None, error=None):
         """!@brief Creates a secrule object. It contains objects for the Variable,
         Operator, and Action parts of the rules
 
@@ -29,6 +30,7 @@ class SecRule():
         self.action = action
         # if the rule is a chain rule, store the next rule here
         self.chain_rule = chain_rule
+        self.error = error
 
     def jsonify_rule(self):
         """!@brief Returns a dict of the attributes of the object
@@ -38,6 +40,8 @@ class SecRule():
         json_rule['variable'] = self.variable.value
         json_rule['operator'] = self.operator.value
         json_rule['action'] = self.action.action
+        if self.error is not None:
+            json_rule['error'] = self.error
         if self.chain_rule is not None:
             json_rule['chain_rule'] = self.chain_rule.jsonify_rule()
         return json_rule
@@ -45,8 +49,13 @@ class SecRule():
     def print_json_rule(self):
         """!@brief Prints the rule in a json format
         """
-        print(json.dumps(self.jsonify_rule(), sort_keys=True, indent=4,
-                         separators=(',', ': ')))
+        if self.error is None:
+            cprint(json.dumps(self.jsonify_rule(), sort_keys=True, indent=4,
+                             separators=(',', ': ')), 'green')
+        else:
+            cprint(json.dumps(self.jsonify_rule(), sort_keys=True, indent=4,
+                             separators=(',', ': ')), 'red')
+
 
 
 class Action():
